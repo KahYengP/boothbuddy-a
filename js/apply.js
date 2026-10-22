@@ -65,7 +65,14 @@ AP.step2 = function () {
   return '<div class="panel glass"><div class="section-title"><span>Upload documents</span><span class="chip' + (n === req.length ? " chip-good" : "") + '">' + n + " of " + req.length + " uploaded</span></div>" +
     '<div class="up-bar"><i style="width:' + (n / req.length * 100) + '%"></i></div>' + rows +
     (n < req.length ? '<p class="muted ap-why">Upload ' + (req.length - n) + " more document" + (req.length - n > 1 ? "s" : "") + " to submit.</p>" : "") +
-    '<div class="nav-row"><button class="btn" id="back">Back</button><button class="btn btn-primary" id="next">Continue to review</button></div></div>';
+    '<div class="nav-row"><button class="btn" id="back">Back</button>' +
+      '<div class="a-actions"><span class="muted draft-note">' + (AP.form.savedAt ? BB.icon("check", 14) + " Draft saved " + AP.form.savedAt : "") + "</span>" +
+      '<button class="btn" id="save-draft">' + BB.icon("file", 16) + ' Save draft</button><button class="btn btn-primary" id="next">Continue to review</button></div></div></div>';
+};
+AP.saveDraft = function () {
+  var d = new Date(), h = d.getHours() % 12 || 12;
+  AP.form.savedAt = h + ":" + ("0" + d.getMinutes()).slice(-2) + (d.getHours() < 12 ? "am" : "pm");
+  AP.save();
 };
 AP.takeFile = function (id, file) {
   if (!file) { return; }
@@ -102,8 +109,7 @@ AP.placeHtml = function (lock) {
 AP.step3 = function () {
   var blocked = AP.blockers() > 0, ready = !blocked && AP.type() && AP.form.agree;
   var why = blocked ? "Some documents are missing. Go back to the documents step." : (!AP.type() ? "Choose a booth type." : (!AP.form.agree ? "Tick the confirmation." : "You pay after the organiser accepts you."));
-  return AP.boothPanel() +
-    '<div class="panel glass submit-panel" style="margin-top:20px">' +
+  return '<div class="panel glass submit-panel a3-submit">' +
     '<label class="agree"><input type="checkbox" id="f-agree"' + (AP.form.agree ? " checked" : "") + '><span>I confirm my documents are accurate and I will follow the organiser rules.</span></label>' +
     '<div class="nav-row"><button class="btn" id="back">Back</button><button class="btn btn-primary" id="submit"' + (ready ? "" : " disabled") + ">Submit application</button></div>" +
     '<p class="muted ap-why" style="margin:10px 0 0">' + why + "</p></div>";
@@ -161,7 +167,7 @@ AP.payCard = function () {
     '<p class="pay-note">' + BB.icon("clock", 14) + " Pay after you are accepted. Applications close " + BB.shortDate(ev.closes) + ".</p></div>";
 };
 
-AP.summary = function () {
+AP.boothCard = function () {
   var ev = AP.ev, t = AP.type();
   var n = AP.form.qty, apart = n > 1 && !AP.form.together, plan;
   if (t && apart) {
@@ -174,14 +180,20 @@ AP.summary = function () {
       plan + BB.amenityHtml(t, true) +
       '<a class="link-btn" style="padding:0;margin-top:12px;display:inline-block;font-size:14.5px" href="event-detail.html?event=' + ev.id + "&booth=" + t.id + '">See it in 3D</a></div>'
     : '<div class="sum-card glass booth-card empty">' + BB.icon("booth", 28) + "<p>Choose a booth type to see its floor plan and what comes with it.</p></div>";
-  return '<aside class="ap-side">' + AP.payCard() + booth + "</aside>";
+  return booth;
+};
+
+/* step 3: Your booth, 2D plan and price in one row, then confirm and submit across the full width */
+AP.step3Layout = function () {
+  return '<div class="a3-row">' + AP.boothPanel() + AP.boothCard() + AP.payCard() + "</div>" + AP.step3();
 };
 
 AP.render = function () {
-  var body = AP.submitted ? AP.done() : (AP.step === 1 ? AP.step1() : (AP.step === 2 ? AP.step2() : AP.step3()));
+  var main = AP.submitted ? AP.done() : (AP.step === 1 ? AP.step1() : AP.step2());
+  var layout = !AP.submitted && AP.step === 3 ? AP.step3Layout() : '<div class="a-full">' + main + "</div>";
   document.getElementById("root").innerHTML = '<a class="back-link" href="event-detail.html?event=' + AP.ev.id + '">' + BB.icon("chevLeft", 18) + " Back to event</a>" +
     '<h1 class="page-title">Apply to ' + AP.ev.short + "</h1><p class=\"page-sub\">Three quick steps. Things to note first, so you know what to expect.</p>" +
-    (AP.submitted ? "" : AP.stepper()) + '<div class="ap-layout"><div>' + body + "</div>" + AP.summary() + "</div>";
+    (AP.submitted ? "" : AP.stepper()) + layout;
   AP.wire();
   AP.fitSide();
   document.querySelectorAll(".ap-side img").forEach(function (im) { im.addEventListener("load", AP.fitSide); });
@@ -213,6 +225,8 @@ AP.wire = function () {
   if (booth) { booth.addEventListener("change", function () { AP.form.booth = booth.value; AP.save(); AP.render(); }); }
   if (prod) { prod.addEventListener("input", function () { AP.form.products = prod.value; AP.save(); }); }
   if (agree) { agree.addEventListener("change", function () { AP.form.agree = agree.checked; AP.save(); AP.render(); }); }
+  var save = document.getElementById("save-draft");
+  if (save) { save.addEventListener("click", function () { AP.saveDraft(); BB.toast("Draft saved. Come back any time to finish."); AP.render(); }); }
   var ct = document.getElementById("contact-org");
   if (ct) { ct.addEventListener("click", AP.contact); }
   var sub = document.getElementById("submit");

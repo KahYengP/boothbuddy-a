@@ -1,0 +1,29 @@
+/* Version A, step 3: Your booth, 2D plan and price in one row,
+   then the confirm tick box and Submit across the full width. */
+/* steps 1 and 2: one card across the full width */
+.a-full > .panel { margin: 0; }
+.a-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* the three cards stretch to the same height */
+.a3-row { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 18px; align-items: stretch; }
+.a3-row > * { margin: 0; height: 100%; box-sizing: border-box; }
+.a3-row .sum-card { position: static; }
+.a3-row .booth-card.empty { align-content: center; }
+
+/* the booth fields are narrower here: category and number of booths on top, booth type below */
+.a3-row .form-grid3 { grid-template-columns: 1fr auto; grid-template-areas: "cat qty" "type type"; }
+.a3-row .form-grid3 > :nth-child(1) { grid-area: cat; }
+.a3-row .form-grid3 > :nth-child(2) { grid-area: type; }
+.a3-row .form-grid3 > :nth-child(3) { grid-area: qty; }
+
+.a3-submit { margin-top: 18px; }
+.a3-submit .nav-row { margin-top: 14px; }
+
+/* smaller screens: booth fields on top, plan and price side by side below */
+@media (max-width: 1100px) {
+  .a3-row { grid-template-columns: 1fr 1fr; }
+  .a3-row > .panel { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .a3-row { grid-template-columns: 1fr; }
+}
